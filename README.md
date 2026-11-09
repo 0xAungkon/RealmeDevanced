@@ -1,0 +1,290 @@
+# Realme Link DeVanced — de-noised modding workspace
+
+> A cleaner version of Realme Link — from a loyal user of Realme.
+>
+> Reverse engineering and analysis done with **[REA](https://github.com/morluto/rea)**
+> (Reverse Engineer Anything). Thanks to the REA project.
+
+**DeVanced** here means *de-noised*. The goal is realme Link with the noise
+stripped out — account walls, promos and upsell cards, permission/consent
+interruptions, legal clutter, guides, nags and dead space — while the part that
+actually matters, controlling the paired device, stays intact.
+
+This repository documents how the **realme Link 5.8.811.2814** split bundle is
+patched and provides the byte-level helpers to reproduce it. The output is a
+personal-use build installed as **`com.realme.mods`** (launcher label
+**“Realme Link DeVanced”**) that can coexist with the official `com.realme.link`.
+
+This repository does **not** ship the proprietary APK. It contains the patch
+recipe, the app-shell analysis, and the patcher scripts needed to reproduce the
+build locally.
+
+**The de-noising rule:** if it sells, nags, gates, interrupts, or merely
+decorates, it goes. If it pairs, controls, configures or updates a device, it
+stays.
+
+> **Disclaimer** — Not affiliated with or endorsed by realme. For personal use on
+> your own device only. Do not redistribute the re-signed proprietary app. The
+> original APK is the property of its copyright holder.
+
+---
+
+## What was removed (the noise)
+
+**Account walls**
+- Login screen removed; the app lands directly on the home page.
+- Add-device, headset and device pages no longer bounce through login gates.
+- The clone runs account-free. Local BLE/device controls work; cloud sync, mall,
+  messages and health sync cannot authenticate (that is the trade-off).
+
+**Home clutter**
+- Virtual experience strip, Smart AI card, health-trends card and weather/location
+  row removed.
+- Notification bell and red dot removed.
+- “Touch and hold to customize your banner theme” guide removed.
+- Header’s 188 dp minimum height cleared, with a responsive 9 dp gap above the
+  device list.
+- Home device card reflects the real connection state (no “Not used” /
+  “Device not connected”).
+
+**Bottom navigation**
+- Health and Workout tabs removed.
+- Me tab replaced by a **Settings** button (black gear icon) that opens
+  `SysSettingsActivity` directly.
+
+**Device pages**
+- Tapping a device or its card opens the device page directly — no Quick guide,
+  no task restart.
+- Earbud connection fixes: headset manager fallback, context injection, login-gate
+  bypass, real `isDeviceConnected()` query.
+- Per-device “Statement of Use” removed.
+- Phone-mode floating windows disabled globally, so the device page, Device
+  details (3-dot) and other pages are full-screen.
+
+**Add device / scanner**
+- “Virtual devices available” banner removed.
+- Manual Band/Watch device section removed.
+- Add-device no longer hits the login gate.
+
+**Settings / About**
+- Rating/feedback overlay removed.
+- Settings rows removed: connection-status notification, App protection,
+  third-party sync, Account management, Personal Information We Collect,
+  Personal Information We Share with Third Parties.
+- About rows removed: Privacy Notice, Service Agreement, Open source licenses,
+  User Experience Program (including its notice), Withdraw consent to Privacy
+  Notice.
+- App label renamed to **Realme Link DeVanced**.
+
+## What was kept (the substance)
+
+- Pairing, scanning and auto-detect.
+- The device page and its controls (ANC / Off / Transparency, EQ, spatial audio,
+  firmware and device details).
+- Home device card with live battery and connection state.
+- Region/location selection (required for BLE scanning and regional behaviour).
+- Manage permissions, version update, and a minimal About page (icon + version).
+- Direct access to Settings from the bottom bar.
+
+The intent is not to cripple the app: it is the same local device tool with the
+selling, nagging and gating layers peeled off.
+
+---
+
+## Target identity
+
+| Field | Original | Clone |
+|---|---|---|
+| Package | `com.realme.link` | `com.realme.mods` |
+| Version | `5.8.811.2814` / `530214` | same |
+| Label | `realme Link` | `Realme Link DeVanced` |
+| Signer | realme (`CN=ROM, O=realme`) | personal key (`rea-mod`) |
+| Install shape | base + 14 split APKs | same split set, re-signed |
+| min / target SDK | 26 / 36 | 26 / 36 |
+
+The package rename deliberately keeps the same byte length (`com.realme.link` →
+`com.realme.mods`, 15 chars) so binary AXML and `resources.arsc` string-pool
+offsets stay valid.
+
+---
+
+## Repository layout
+
+```
+.
+├── CLAUDE.md                              # guidance for Claude Code in this repo
+├── README.md
+├── app/                                   # ignored: target APKs (proprietary)
+├── rea-src/                               # ignored: local clone of the REA tool source
+└── work/
+    ├── MAP-realme-link-5.8.md             # app-shell architecture map
+    ├── PATCH-RECIPE-realme-link-5.8.md    # canonical patch catalog + build pipeline
+    └── patcher/
+        ├── README.md                      # script order of operations
+        ├── patch_axml.py                  # equal-length manifest string patcher
+        ├── patch_arsc.py                  # equal-length resources.arsc string patcher
+        ├── patch_arsc_rename.py           # variable-length rename (resizes string pool)
+        ├── swap_dex.py                    # dex swap into the original base
+        ├── patch_setting_img.py           # settings-icon vector color patch
+        ├── build_clone_split.py           # original end-to-end harness
+        ├── patch_map.json                 # package/authority mapping
+        └── arsc_map.json                  # resource string mapping
+```
+
+Decoded trees (`work/base58/apktool-out/`, jadx output) and `/tmp` build artifacts
+are intentionally not tracked — they are large and reproducible.
+
+---
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [`work/PATCH-RECIPE-realme-link-5.8.md`](work/PATCH-RECIPE-realme-link-5.8.md) | Every patch (§3.1–§3.24), build steps, on-device patcher design, pitfalls |
+| [`work/MAP-realme-link-5.8.md`](work/MAP-realme-link-5.8.md) | Startup flow, tab shell, WebView bridge, telemetry, ads, permissions, update/integrity paths |
+| [`work/patcher/README.md`](work/patcher/README.md) | Script usage and order of operations |
+
+Read the patch recipe before changing anything; it records the exact smali sites
+and the reasons behind each edit.
+
+---
+
+## Toolchain
+
+- JDK 21
+- [apktool](https://apktool.org/) 3.0.3
+- [jadx](https://github.com/skylot/jadx) 1.5.6
+- Android build-tools 35: `aapt2`, `apksigner`, `zipalign`
+- `adb` with a connected arm64 Android device
+- Python 3 (standard library only for the patcher scripts)
+
+The signing key is local (`~/.local/opt/rea-mod.keystore`, alias `rea-mod`); the
+password file is not part of this repository.
+
+---
+
+## Build and install
+
+The final APK is always assembled from the **original base APK**, with only the
+patched `classes*.dex` swapped in. `apktool b` is used only to produce dex files:
+its rebuilt resources drop the shared resource packages (`0x80`–`0x84`) and are
+discarded.
+
+```bash
+# 0. pull the installed split bundle (personal device)
+adb shell pm path com.realme.link
+# pull base.apk and every split_*.apk into /tmp/pulled-realme-link/
+
+# 1. decode the base once, keeping dex files as files
+apktool d -s -f -o work/base58/apktool-out /tmp/pulled-realme-link/base.apk
+
+# 2. apply smali patches under work/base58/apktool-out/smali*/
+#    (patch IDs and snippets are in the recipe)
+
+# 3. rebuild dex
+apktool b work/base58/apktool-out -o /tmp/base-mod-build.apk
+
+# 4. swap only the dex that changed into the current base
+#    classes36 = account/login · classes38 = app shell · classes40 = headset/device
+python3 -I work/patcher/swap_dex.py /tmp/base-mod38.apk /tmp/base-mod-build.apk \
+    /tmp/base-mod-new-unsigned.apk classes38.dex
+
+# 5. align + sign (base and every split must use the same key)
+zipalign -p -f 4 /tmp/base-mod-new-unsigned.apk /tmp/base-mod-new-aligned.apk
+apksigner sign --ks ~/.local/opt/rea-mod.keystore \
+    --ks-pass "pass:$(cat ~/.local/opt/rea-mod.pass)" \
+    --key-pass "pass:$(cat ~/.local/opt/rea-mod.pass)" \
+    --ks-key-alias rea-mod --out /tmp/base-mod-new.apk \
+    /tmp/base-mod-new-aligned.apk
+
+# 6. install the whole bundle. The clone is a separate package, so the official
+#    app can stay installed; -r keeps the clone's data on later updates.
+#    (Substitute the latest /tmp/base-mod*.apk for base-mod38.apk above.)
+adb shell am force-stop com.realme.mods
+adb install-multiple -r --no-incremental -p com.realme.mods /tmp/base-mod-new.apk \
+    /tmp/clone-split-signed/split_*.apk
+adb shell cmd package compile -m speed -f com.realme.mods   # improves cold start
+```
+
+### First-time clone setup
+
+1. Rename package, authorities and permission in the base **and all splits**
+   with `patch_axml.py` (mapping: `patch_map.json`).
+2. Rename the launcher label with `patch_arsc_rename.py` if the text differs in
+   length.
+3. Sign all 15 APKs with one key, then `adb install-multiple`.
+4. Keep the official app installed alongside — that is the point of the clone.
+
+---
+
+## Patcher scripts
+
+All scripts are dependency-free and accept file paths; run them with
+`python3 -I` so untrusted APK data cannot shadow imports.
+
+| Script | Purpose |
+|---|---|
+| `patch_axml.py <apk> <map.json> <out>` | Equal-length string-pool replacement in binary `AndroidManifest.xml` (package/authorities). Apply to base **and every split**. |
+| `patch_arsc.py <apk> <map.json> <out>` | Equal-length string replacement in `resources.arsc`. |
+| `patch_arsc_rename.py <in> <out> <old> <new>` | Rename a resource string of **different** length by resizing the global string pool and fixing all following offsets. |
+| `swap_dex.py <original> <patched> <out> [dex…]` | Replace `classes*.dex` entries in the original APK (default: 36, 38, 40). |
+| `patch_setting_img.py <in> <out>` | Make `res/drawable/setting_img.xml` a transparent circle with a black gear. |
+| `build_clone_split.py` | Original end-to-end harness (dex swap + manifest patch + align + sign). |
+
+---
+
+## Verification
+
+```bash
+adb exec-out screencap -p > /tmp/shot.png
+adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml /tmp/ui.xml
+aapt2 dump badging /tmp/base-mod-new.apk | grep -E "package:|application-label:"
+adb logcat -b crash | grep com.realme.mods
+adb shell pidof com.realme.mods
+```
+
+Things that are easy to miss:
+
+- A “crash” on device tap was actually a task restart (`DeviceUtils.w()` sends
+  `MAIN | CLEAR_TASK`). Check `ActivityTaskManager` start flags, not only
+  `FATAL EXCEPTION`.
+- `Fragment.findViewById` does not exist here — use `getView().findViewById`.
+- ConstraintLayout stores its own `mMinHeight`; `View.setMinimumHeight()` does not
+  clear `android:minHeight`.
+- Hiding `ConstraintLayout` chain members can make the remaining anchors collapse
+  and overlap; hide the leftovers or re-anchor.
+
+The full checklist is in the patch recipe (§5), and the pitfalls are in §7.
+
+---
+
+## Known limitations
+
+- The clone has no account, so cloud-dependent features fail silently.
+- The `realmeHeadset` dynamic module is not in the pulled bundle; the clone loads
+  its resources via `addAssetPath()` and bypasses the headset login gates.
+- The clone never receives official updates; re-patch a new official version and
+  reinstall the split set instead. It stays a separate package from the official
+  app.
+- The official app’s `allowBackup=false` means uninstalling it loses local data.
+
+---
+
+## Credits
+
+Reverse engineering, APK inspection and the analysis workflow behind the app map
+and patch recipe were done with **[REA — Reverse Engineer Anything](https://github.com/morluto/rea)**.
+Thanks to the REA author and contributors for making this kind of tooling
+available.
+
+Realme Link DeVanced is a cleaner version of Realme Link, made by a loyal Realme
+user for personal use. It is not affiliated with, endorsed by, or supported by
+realme.
+
+## Branching
+
+- `development` — working branch for new patches.
+- `main` — released/latest state, fast-forwarded from `development`.
+
+Commit documentation and patcher scripts only. Never commit decoded artifacts,
+target APKs, keystores or passwords.
