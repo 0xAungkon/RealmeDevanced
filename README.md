@@ -89,6 +89,25 @@ stays.
 The intent is not to cripple the app: it is the same local device tool with the
 selling, nagging and gating layers peeled off.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="artifacts/Home.jpeg" width="250" alt="Home screen"><br>
+      <sub><b>Home</b> — one device, live status, no promo cards, no notification bell</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="artifacts/Device.jpeg" width="250" alt="Device page"><br>
+      <sub><b>Device</b> — full-screen page (ANC, sound effects, other controls), no floating dialog</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="artifacts/Settings.jpeg" width="250" alt="Settings"><br>
+      <sub><b>Settings</b> — only the useful rows; the noise is gone</sub>
+    </td>
+  </tr>
+</table>
+
 ---
 
 ## Target identity
