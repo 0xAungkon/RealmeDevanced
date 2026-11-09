@@ -27,6 +27,12 @@ These scripts implement the byte-level parts of
    ```bash
    python3 patch_arsc.py out/base.patched.apk arsc_map.json out/base.final.apk
    ```
+   For a label whose new text is **not the same length** (e.g. rename to
+   “Realme Link DeVanced”), use the pool-resizing patcher instead:
+   ```bash
+   python3 patch_arsc_rename.py out/base.patched.apk out/base.final.apk \
+       "realme Mods" "Realme Link DeVanced"
+   ```
 5. Align and sign all APKs with one key:
    ```bash
    zipalign -p -f 4 out/base.final.apk out/base.aligned.apk
@@ -46,8 +52,9 @@ These scripts implement the byte-level parts of
 
 ## Notes
 
-- Every replacement must keep the same encoded byte length. Both scripts
-  abort on a mismatch.
+- `patch_axml.py` and `patch_arsc.py` require the same encoded byte length
+  and abort on a mismatch. `patch_arsc_rename.py` is the exception: it resizes
+  the global string pool and fixes all following offsets.
 - `patch_axml.py` only rewrites exact string-pool entries. Component class
   names and broadcast action strings are untouched.
 - `build_clone_split.py` is the original end-to-end harness used for this
