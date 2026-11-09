@@ -16,11 +16,22 @@ These scripts implement the byte-level parts of
    ```bash
    python3 swap_dex.py base.apk base-mod.apk base-swapped.apk
    ```
-3. Rename package/authorities in base + every split:
+3. Rename package/authorities in base + every split. Equal-length names use
+   `patch_axml.py`:
    ```bash
    python3 patch_axml.py base-swapped.apk patch_map.json base.patched.apk
    for f in split_*.apk; do
      python3 patch_axml.py "$f" patch_map.json "out/$f"
+   done
+   ```
+   A longer/shorter package (the current `com.realme.devanced`) uses the
+   pool-resizing patcher:
+   ```bash
+   python3 patch_axml_rename.py base-swapped.apk base.patched.apk \
+       com.realme.mods com.realme.devanced
+   for f in split_*.apk; do
+     python3 patch_axml_rename.py "$f" "out/$f" \
+         com.realme.mods com.realme.devanced
    done
    ```
 4. Optional resource strings (label / virtual count):
@@ -47,14 +58,15 @@ These scripts implement the byte-level parts of
 6. Install:
    ```bash
    adb install-multiple -r out/base.apk out/split_*.apk
-   adb shell cmd package compile -m speed -f com.realme.mods
+   adb shell cmd package compile -m speed -f com.realme.devanced
    ```
 
 ## Notes
 
 - `patch_axml.py` and `patch_arsc.py` require the same encoded byte length
-  and abort on a mismatch. `patch_arsc_rename.py` is the exception: it resizes
-  the global string pool and fixes all following offsets.
+  and abort on a mismatch. `patch_axml_rename.py` (manifest string pool) and
+  `patch_arsc_rename.py` (arsc global pool) are the exceptions: they resize the
+  pool and fix all following offsets.
 - `patch_axml.py` only rewrites exact string-pool entries. Component class
   names and broadcast action strings are untouched.
 - `build_clone_split.py` is the original end-to-end harness used for this

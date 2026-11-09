@@ -8,7 +8,7 @@ A reverse-engineering workspace for **realme Link 5.8.811.2814** (split APK bund
 The purpose is to **deVance** the app — strip the noise (account walls, promos,
 upsell cards, consent/legal interruptions, guides, nags, dead space) while keeping
 local device control. The deliverable is a working, personal-use clone installed
-as **`com.realme.mods`** (launcher label "Realme Link DeVanced") that can coexist
+as **`com.realme.devanced`** (launcher label "Realme Link DeVanced") that can coexist
 with the official `com.realme.link`. The two Markdown files are the real product:
 every change is documented so it can later be re-implemented in an on-device
 patcher APK.
@@ -40,8 +40,8 @@ Paths (not tracked):
 | `/tmp/pulled-realme-link/` | original base + 14 splits pulled from the device |
 | `work/base58/apktool-out/` | decoded/patched tree (smali, res, assets) |
 | `work/base58/jadx-{0,35,38}/sources/` | targeted Java for the shell dexes |
-| `/tmp/clone-split-signed/` | currently signed split set (base + splits) |
-| `/tmp/base-mod*.apk` | current patched+renamed base (latest installed) |
+| `/tmp/clone-devanced-signed/` | current signed split set (package `com.realme.devanced`) |
+| `/tmp/base-devanced.apk` | current patched+renamed base (latest installed) |
 | test device | Infinix X6831, Android 13, via adb |
 
 There is no test suite or linter. Verification is on-device (see below).
@@ -60,8 +60,8 @@ apktool d -s -f -o work/base58/apktool-out /tmp/pulled-realme-link/base.apk
 # 2. edit smali under work/base58/apktool-out/smali*/ ; then rebuild dex
 apktool b work/base58/apktool-out -o /tmp/base-mod-build.apk
 
-# 3. swap only the patched dex into the previous/original base
-python3 -I work/patcher/swap_dex.py /tmp/base-mod38.apk /tmp/base-mod-build.apk \
+# 3. swap only the patched dex into the current (already renamed) base
+python3 -I work/patcher/swap_dex.py /tmp/base-devanced.apk /tmp/base-mod-build.apk \
     /tmp/base-mod-new-unsigned.apk classes38.dex
 # (classes36.dex = account/login, classes38.dex = shell, classes40.dex = headset/device)
 
@@ -73,16 +73,16 @@ apksigner sign --ks ~/.local/opt/rea-mod.keystore \
     --ks-key-alias rea-mod --out /tmp/base-mod-new.apk /tmp/base-mod-new-aligned.apk
 
 # 5. install the whole bundle (all splits must share the same cert); -r preserves data
-adb shell am force-stop com.realme.mods
-adb install-multiple -r --no-incremental -p com.realme.mods /tmp/base-mod-new.apk \
-    /tmp/clone-split-signed/split_*.apk
-adb shell cmd package compile -m speed -f com.realme.mods   # ~4.5s cold start -> ~1.5s
+adb shell am force-stop com.realme.devanced
+adb install-multiple -r --no-incremental /tmp/base-mod-new.apk \
+    /tmp/clone-devanced-signed/split_*.apk
+adb shell cmd package compile -m speed -f com.realme.devanced   # ~4.5s cold start -> ~1.5s
 
 # 6. verify
 adb exec-out screencap -p > /tmp/shot.png
 adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml /tmp/ui.xml
-adb logcat -b crash | grep com.realme.mods
-adb shell pidof com.realme.mods
+adb logcat -b crash | grep com.realme.devanced
+adb shell pidof com.realme.devanced
 aapt2 dump badging /tmp/base-mod-new.apk | grep -E "package:|application-label:"
 ```
 
@@ -91,6 +91,7 @@ aapt2 dump badging /tmp/base-mod-new.apk | grep -E "package:|application-label:"
 | Script | Job |
 |---|---|
 | `patch_axml.py` | equal-length string-pool edits in binary `AndroidManifest.xml` (package/authorities), base + every split |
+| `patch_axml_rename.py` | **variable-length** package-prefix rename: rebuilds the manifest string pool, offsets and XML header |
 | `patch_arsc.py` | equal-length string edits in `resources.arsc` |
 | `patch_arsc_rename.py` | **variable-length** rename by resizing the global string pool (fixes offsets/styles/table size) |
 | `swap_dex.py` | replace `classes*.dex` entries in a base APK |
@@ -98,14 +99,16 @@ aapt2 dump badging /tmp/base-mod-new.apk | grep -E "package:|application-label:"
 | `build_clone_split.py` | original end-to-end harness (swap + manifest + align + sign) |
 
 Run them with `python3 -I` (they read untrusted APKs). Same-length replacement is
-required by `patch_axml.py` / `patch_arsc.py`; use `patch_arsc_rename.py` when the
-new text differs in length.
+required by `patch_axml.py` / `patch_arsc.py`; use `patch_axml_rename.py` for a
+longer/shorter package name and `patch_arsc_rename.py` for resource strings.
 
 ## Clone model and constraints
 
-- Package rename must keep **byte length** (`com.realme.link` → `com.realme.mods`,
-  both 15) so AXML/arsc string-pool offsets stay valid; authorities and the
+- Package rename: `com.realme.link` → `com.realme.devanced` is longer, so the
+  manifest string pool is resized by `patch_axml_rename.py`; authorities and the
   `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` are renamed in base and every split.
+  The equal-length path (`patch_axml.py`, e.g. `com.realme.mods`) is kept for
+  reference but is no longer the current identity.
 - All 15 APKs must be signed by one cert or `install-multiple` fails. Re-signing
   requires uninstalling the official build, and `allowBackup=false` loses data.
 - Do **not** merge the split bundle into one APK: dynamic resource packages

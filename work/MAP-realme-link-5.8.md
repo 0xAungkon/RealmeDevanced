@@ -204,12 +204,14 @@ Known consequence: with no account token, account-gated actions (pair device,
 messages, health sync, mall) are inert. The account redirect only removes the
 login UI; it does not mint a token.
 
-## 11b. Coexisting clone (`com.realme.mods`)
+## 11b. Coexisting clone (`com.realme.devanced`)
 
 A second, independently installable build was produced so the official
 `com.realme.link` can be installed alongside it.
 
-- Identity: package `com.realme.mods`, label **realme Mods**, same version/code.
+- Identity: package `com.realme.devanced`, label **Realme Link DeVanced**, same
+  version/code. (The first clone was `com.realme.mods` / “realme Mods”; the
+  package was later renamed. History is kept in the patch recipe §3.25.)
 - Structure: **base + all 14 original splits**, not a merged APK. Merging with
   APKEditor preserved resource packages but an apktool resource rebuild dropped
   them; the split bundle keeps `0x7f`–`0x84` packages and Play Core modules.
@@ -217,9 +219,10 @@ A second, independently installable build was produced so the official
   - original base APK with `classes36.dex`/`classes38.dex` swapped from the
     patched apktool build (login/card/device-gate patches)
   - binary `AndroidManifest.xml` string-pool patch in base and all splits:
-    `com.realme.link` → `com.realme.mods` (equal length), 30 provider
+    `com.realme.link` → `com.realme.mods` (equal length originally, then
+    `com.realme.mods` → `com.realme.devanced` with a resized pool), 30 provider
     authorities, the dynamic-receiver permission, plus the OPPO/Facebook
-    provider authorities (equal-length unique values)
+    provider authorities (unique values)
   - `resources.arsc` string patch: `realme Link` → `realme Mods` and the
     virtual-device plural blanked (same-length, no resource rebuild)
   - `zipalign -p 4`, then all 15 APKs signed with `rea-mod.keystore`
@@ -233,8 +236,8 @@ A second, independently installable build was produced so the official
   the pulled bundle. This is unrelated to the button patch; the official
   sideloaded bundle lacks the same module.
 - Artifacts: `work/base58/signed-mod/` (old single build),
-  `/tmp/clone-split-signed/` (split clone). Rebuild script:
-  `/tmp/build-clone-split.py`.
+  `/tmp/clone-devanced-signed/` (current split clone). Patcher scripts:
+  `work/patcher/`.
 
 ### 11c. Crash fix and UI removals (latest build)
 

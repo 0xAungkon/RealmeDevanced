@@ -1,6 +1,6 @@
 # realme Link 5.8.811.2814 — complete patch recipe
 
-Purpose: document every change made to produce the working `com.realme.mods`
+Purpose: document every change made to produce the working `com.realme.devanced`
 clone, in enough detail to re-implement it as an automated on-device patcher.
 
 Everything here is for the user's own device / personal use. The patcher must
@@ -25,13 +25,17 @@ Clone identity produced:
 
 | Field | Value |
 |---|---|
-| Package | `com.realme.mods` (same length as `com.realme.link`) |
-| Label | `realme Mods` |
+| Package | `com.realme.devanced` (19 chars; manifest pool resized, §3.25) |
+| Label | `Realme Link DeVanced` |
 | Signing key | `~/.local/opt/rea-mod.keystore`, alias `rea-mod` (do not commit the password) |
 | Cert SHA-256 | `98719857b36d95767f7f319e42e8752e2e44a78dbe10b6907ff386724093c231` |
 
-Same-length package rename is deliberate: it allows byte-for-byte replacement
-inside binary AXML/`resources.arsc` string pools without rebuilding resources.
+History: the first clone used `com.realme.mods`, deliberately the same byte
+length as `com.realme.link` so AXML string-pool offsets stayed stable and could
+be patched without rebuilding resources. The package was later renamed to
+`com.realme.devanced`, which is longer, so the manifest string pool is now
+resized by `patch_axml_rename.py` (§3.25). `com.realme.mods` remains supported
+by the equal-length patcher for reference.
 
 ---
 
@@ -320,12 +324,16 @@ Base `resources.arsc` only; same-length byte replacements (no rebuild):
 | `%s virtual device` | 17 spaces | 17 → 17 |
 
 `realme Link` occurs 3,083 times in the arsc (labels, legal text, UI copy).
-All are rewritten; that is why the clone is called “realme Mods” everywhere.
+All are rewritten; that is why in-app copy still says “realme Mods”. The
+launcher label was later renamed to **Realme Link DeVanced** (§3.23); the body
+text strings were intentionally left untouched.
 
 ### 3.10 Manifest — clone package and authorities
 
 Applied to the **base and all 14 split manifests** as equal-length string-pool
-replacements in the binary `AndroidManifest.xml` (AXML):
+replacements in the binary `AndroidManifest.xml` (AXML). This section records
+the original `com.realme.mods` step; the current `com.realme.devanced` rename
+uses the pool-resizing variant in §3.25:
 
 - `package="com.realme.link"` → `package="com.realme.mods"`
 - every authority/provision string equal to `com.realme.link`, or
@@ -881,6 +889,56 @@ aapt2 dump badging out.apk | grep application-label:
 
 The launcher shows the new name; the official `realme Link` stays separate.
 
+### 3.25 Rename the clone package to `com.realme.devanced`
+
+`com.realme.devanced` (19 chars) is longer than `com.realme.link` (15), so the
+equal-length byte patch of §3.10 cannot be used. The clone package is only
+stored in the binary `AndroidManifest.xml` of the base and splits (the
+`resources.arsc` global pool contains no package strings — verified 0 matches).
+
+`work/patcher/patch_axml_rename.py` rebuilds the manifest string pool instead:
+
+1. Decode the pool (AXML pools are usually **UTF-16**: one length prefix in
+   code units, then data, then `0x0000`; UTF-8 pools use the two-prefix form
+   from §3.23).
+2. Rewrite every string equal to or starting with `com.realme.mods` to
+   `com.realme.devanced…` (package attribute, 30 provider authorities,
+   `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`). Class names and broadcast
+   actions are untouched.
+3. Recalculate all string offsets, `stringsStart`, `stylesStart`, the pool
+   chunk size and the XML file header size; the rest of the AXML shifts
+   unchanged.
+
+Apply to the base **and every split**, then re-sign all 15 with one key:
+
+```bash
+python3 -I work/patcher/patch_axml_rename.py base.apk base.dev.apk \
+    com.realme.mods com.realme.devanced
+for f in split_*.apk; do
+  python3 -I work/patcher/patch_axml_rename.py "$f" "out/$f" \
+      com.realme.mods com.realme.devanced
+done
+# zipalign + apksigner each output (same key as before)
+adb install-multiple -r --no-incremental out/base.dev.apk out/split_*.apk
+```
+
+Verified:
+
+```bash
+aapt2 dump badging out/base.dev.apk | head -1
+# package: name='com.realme.devanced' versionCode='530214' ...
+aapt2 dump xmltree out/base.dev.apk --file AndroidManifest.xml | grep authorities
+# com.realme.devanced.fileprovider, com.realme.devanced.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION, ...
+```
+
+The new package is a fresh Android identity: app data starts empty, the
+first-launch Statement of Use appears again, and the old
+`com.realme.mods` package (if still installed) remains side by side until
+uninstalled. The system BLE bond survives, so the device is re-detected
+without re-pairing. After install run
+`cmd package compile -m speed -f com.realme.devanced` to restore cold-start
+speed.
+
 ### 3.24 Remove rows from Settings and About
 
 **Settings** — `smali_classes38/com/realme/link/settings/syssettings/view/
@@ -968,7 +1026,7 @@ runtime without a resource rebuild.
 8. Install:
    ```bash
    adb install-multiple -r signed/base.apk signed/split_*.apk
-   adb shell cmd package compile -m speed -f com.realme.mods
+   adb shell cmd package compile -m speed -f com.realme.devanced
    ```
 
 ---
@@ -993,8 +1051,8 @@ runtime without a resource rebuild.
 - [ ] First device connection shows no per-device “Statement of Use”;
       the device page (Noise control / EQ / Spatial Audio) opens.
 - [ ] No “How do you like…” rating overlay.
-- [ ] `adb shell pidof com.realme.mods` stays stable during the above.
-- [ ] `adb logcat -b crash` has no new entries for `com.realme.mods`.
+- [ ] `adb shell pidof com.realme.devanced` stays stable during the above.
+- [ ] `adb logcat -b crash` has no new entries for `com.realme.devanced`.
 
 ---
 
@@ -1029,9 +1087,9 @@ shared resource packages (`0x80`+). Keep the original `resources.arsc`.
 
 ### 6.3 Package rename constraints
 
-- Use a package name of exactly the same byte length as `com.realme.link`
-  (15) to keep AXML string-pool offsets stable. Current clone uses
-  `com.realme.mods`.
+- Equal byte length (`com.realme.link` → `com.realme.mods`, both 15) keeps AXML
+  string-pool offsets stable and allows a trivial byte patch. A longer name
+  (`com.realme.devanced`, 19) requires the pool resize in §3.25.
 - Rename all provider authorities and the `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`
   on base + every split. Two apps declaring the same provider authority cannot
   coexist.
@@ -1117,6 +1175,8 @@ The clone is intentionally account-free. Consequences:
   `resources.arsc`.
 - `work/patcher/swap_dex.py` — replace `classes*.dex` entries in the original
   base APK with patched ones.
+- `work/patcher/patch_axml_rename.py` — variable-length package-prefix rename:
+  rebuilds the manifest string pool and all offsets (§3.25).
 - `work/patcher/patch_setting_img.py` — transparent-circle / black-gear patch
   for `res/drawable/setting_img.xml` (§3.13c).
 - `work/patcher/patch_arsc_rename.py` — variable-length app-name patch that
