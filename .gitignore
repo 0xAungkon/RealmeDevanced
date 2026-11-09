@@ -15,3 +15,10 @@
 # Python
 __pycache__/
 *.pyc
+
+# Patcher build payload (derived from the proprietary app; personal use only)
+/patcher-app/assets/*.dex
+/patcher-app/assets/rea-mod.p12
+/patcher-app/assets/ks.pass
+/patcher-app/build/
+/patcher-app/*.apk

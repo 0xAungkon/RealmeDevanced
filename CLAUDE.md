@@ -13,8 +13,10 @@ with the official `com.realme.link`. The two Markdown files are the real product
 every change is documented so it can later be re-implemented in an on-device
 patcher APK.
 
-Only docs and dependency-free Python helpers are tracked. Decoded APKs, jadx
-outputs, build artifacts and target APKs are gitignored and regenerable.
+Tracked: the docs, dependency-free Python helpers, and the Java source of the
+on-device patcher (`patcher-app/`). Decoded APKs, jadx outputs, build artifacts,
+target APKs and the patcher's embedded dex payload are gitignored and
+regenerable.
 `rea-src/` is a local clone of the REA MCP tool source, not part of the
 deliverable. `app/com.realme.link_1.2.105.18-323....apk` is an obsolete
 monolithic build kept only as a reference — all findings target the installed
@@ -149,6 +151,23 @@ factories/delegates are in classes38.
    globally (`810x1800`, `dimAmount 0.8`, `FLAG_DIM_BEHIND`, rounded background).
 9. AOT compile after install (`cmd package compile -m speed`) is needed for a
    usable cold start.
+
+## On-device patcher (`patcher-app/`)
+
+A no-root Java app (built without Gradle) that reads the installed realme Link
+bundle, swaps in the patched `classes36/38/40.dex`, renames the package to
+`com.realme.devanced`, re-signs base + splits and installs via
+`PackageInstaller`. Build with `BASE_APK=/tmp/base-devanced.apk
+./patcher-app/build.sh` → `patcher-app/build/RealmeVancedPatcher_<version>.apk`.
+
+- `AxmlRename` / `ArscRename` resize string pools; `ZipRewriter` must keep
+  `resources.arsc` 4-byte aligned and `.so` entries STORED/4 KiB aligned or
+  PackageManager rejects the APK (`Failed parse during installPackageLI`).
+- The built APK embeds derivative realme dex: personal use only, never commit
+  or publish it. Only `patcher-app/src`, the manifest and `build.sh` are tracked.
+- After a successful install the UI shows “Installed as com.realme.devanced.
+  Now you can delete the original realme Link if you want.” The result is
+  persisted in SharedPreferences because the installer may background the app.
 
 ## Git
 

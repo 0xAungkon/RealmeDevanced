@@ -75,6 +75,7 @@ using equal-length byte replacement.
 ├── CLAUDE.md                              # guidance for Claude Code in this repo
 ├── README.md
 ├── app/                                   # ignored: target APKs (proprietary)
+├── patcher-app/                           # on-device patcher source (payload built locally)
 ├── rea-src/                               # ignored: local clone of the REA tool source
 └── work/
     ├── MAP-realme-link-5.8.md             # app-shell architecture map
@@ -193,6 +194,23 @@ All scripts are dependency-free and accept file paths; run them with
 | `build_clone_split.py` | Original end-to-end harness (dex swap + manifest patch + align + sign). |
 
 ---
+
+## On-device patcher (local build)
+
+`patcher-app/` builds **`RealmeVancedPatcher_v5.8.811.2814.apk`**, a no-root
+patcher that reads the *installed* realme Link bundle, applies the patched
+`classes36/38/40.dex`, renames the package to `com.realme.devanced`, re-signs
+every APK and installs the result through `PackageInstaller`. The official app
+stays installed; when the install completes the patcher tells the user:
+
+> Now you can delete the original realme Link if you want.
+
+```bash
+BASE_APK=/tmp/base-devanced.apk ./patcher-app/build.sh
+```
+
+The built APK embeds patched realme dex, so it is **personal-use only** and is
+not committed or published — only the patcher source is tracked.
 
 ## Verification
 
