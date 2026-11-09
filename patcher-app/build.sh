@@ -15,7 +15,7 @@ KS="$HOME/.local/opt/rea-mod.keystore"
 PASSFILE="$HOME/.local/opt/rea-mod.pass"
 BASE_APK="${BASE_APK:-/tmp/base-devanced.apk}"
 VERSION="5.8.811.2814"
-OUT="build/RealmeVancedPatcher_v${VERSION}.apk"
+OUT="build/RealmeDevancedPatcher_v${VERSION}.apk"
 
 for f in "$BT/d8" "$BT/aapt2" "$BT/zipalign" "$BT/apksigner" "$AJ" "$KS" "$PASSFILE" "$BASE_APK"; do
     [ -e "$f" ] || { echo "missing: $f" >&2; exit 1; }

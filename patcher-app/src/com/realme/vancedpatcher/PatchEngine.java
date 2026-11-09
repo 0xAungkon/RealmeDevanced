@@ -1,6 +1,5 @@
 package com.realme.vancedpatcher;
 
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -18,29 +17,86 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/** Pulls the installed realme Link APKs, patches them, signs and installs. */
+/** Builds a patched, signed split bundle and stores it in the patcher. */
 final class PatchEngine {
 
     static final String TARGET_PACKAGE = "com.realme.link";
     static final String TARGET_VERSION = "5.8.811.2814";
 
+    static final String[] STEP_LABELS = {
+            "Reading installed realme Link",
+            "Renaming package and authorities",
+            "Renaming app label",
+            "Patching settings icon",
+            "Injecting de-noised code",
+            "Repacking base APK",
+            "Signing base APK",
+            "Patching splits",
+            "Saving patched bundle",
+    };
+
     interface Callback {
-        void progress(String message);
+        void step(int index, String detail);
+
+        void stepDone(int index);
 
         void error(String message);
+
+        void done();
     }
 
-    static void run(Context ctx, PendingIntent installerCallback, Callback cb) {
+    static File patchedDir(Context ctx) {
+        return new File(ctx.getFilesDir(), "patched");
+    }
+
+    static boolean patchedReady(Context ctx) {
+        File dir = patchedDir(ctx);
+        if (!new File(dir, "base.apk").isFile()) {
+            return false;
+        }
+        File marker = new File(dir, "version.txt");
+        if (!marker.isFile()) {
+            return false;
+        }
         try {
-            doRun(ctx, installerCallback, cb);
+            byte[] raw = readAll(new java.io.FileInputStream(marker));
+            return TARGET_VERSION.equals(new String(raw, "UTF-8").trim());
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    static List<File> patchedFiles(Context ctx) {
+        File dir = patchedDir(ctx);
+        List<File> files = new ArrayList<>();
+        File base = new File(dir, "base.apk");
+        if (base.isFile()) {
+            files.add(base);
+        }
+        File[] children = dir.listFiles();
+        if (children != null) {
+            java.util.Arrays.sort(children);
+            for (File f : children) {
+                if (f.isFile() && f.getName().startsWith("split_")
+                        && f.getName().endsWith(".apk")) {
+                    files.add(f);
+                }
+            }
+        }
+        return files;
+    }
+
+    static void prepare(Context ctx, Callback cb) {
+        try {
+            doPrepare(ctx, cb);
         } catch (Throwable e) {
             android.util.Log.e("vanced-patcher", "patch failed", e);
             cb.error(e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
-    private static void doRun(Context ctx, PendingIntent installerCallback,
-                              Callback cb) throws Exception {
+    private static void doPrepare(Context ctx, Callback cb) throws Exception {
+        cb.step(0, null);
         PackageManager pm = ctx.getPackageManager();
         PackageInfo info;
         try {
@@ -63,61 +119,85 @@ final class PatchEngine {
                 }
             }
         }
+        cb.stepDone(0);
 
-        File work = new File(ctx.getCacheDir(), "vanced");
-        deleteRecursive(work);
-        File unsigned = new File(work, "unsigned");
-        File signed = new File(work, "signed");
-        if (!unsigned.mkdirs() || !signed.mkdirs()) {
-            throw new IOException("cannot create work directories");
+        File tmp = new File(ctx.getFilesDir(), "patched-tmp");
+        deleteRecursive(tmp);
+        if (!tmp.mkdirs()) {
+            throw new IOException("cannot create work directory");
         }
 
         Map<String, String> renameMap = RenameMap.build();
-        List<File> signedApks = new ArrayList<>();
-        int index = 0;
+        int splitCount = sources.size() - 1;
+        int splitIndex = 0;
+
         for (String source : sources) {
-            index++;
             File src = new File(source);
             String name = src.getName();
-            cb.progress("[" + index + "/" + sources.size() + "] " + name);
-
             Map<String, byte[]> replacements = new HashMap<>();
+
             if ("base.apk".equals(name)) {
-                cb.progress("  manifest + package rename");
+                cb.step(1, null);
                 replacements.put("AndroidManifest.xml", AxmlRename.rename(
                         readEntry(src, "AndroidManifest.xml"), renameMap));
+                cb.stepDone(1);
 
-                cb.progress("  app label");
+                cb.step(2, null);
                 replacements.put("resources.arsc", ArscRename.rename(
                         readEntry(src, "resources.arsc"),
                         "realme Link", "Realme Link DeVanced"));
+                cb.stepDone(2);
 
-                cb.progress("  settings icon");
+                cb.step(3, null);
                 replacements.put("res/drawable/setting_img.xml", DrawablePatch.patch(
                         readEntry(src, "res/drawable/setting_img.xml")));
+                cb.stepDone(3);
 
-                cb.progress("  patched code");
+                cb.step(4, null);
                 replacements.put("classes36.dex", readAsset(ctx, "classes36.dex"));
                 replacements.put("classes38.dex", readAsset(ctx, "classes38.dex"));
                 replacements.put("classes40.dex", readAsset(ctx, "classes40.dex"));
+                cb.stepDone(4);
+
+                cb.step(5, null);
+                File unsigned = new File(tmp, name + ".unsigned");
+                ZipRewriter.rewrite(src, unsigned, replacements, null);
+                cb.stepDone(5);
+
+                cb.step(6, null);
+                Signer.sign(ctx, unsigned, new File(tmp, name));
+                unsigned.delete();
+                cb.stepDone(6);
             } else {
-                cb.progress("  split manifest");
+                splitIndex++;
+                cb.step(7, name + " (" + splitIndex + "/" + splitCount + ")");
                 replacements.put("AndroidManifest.xml", AxmlRename.rename(
                         readEntry(src, "AndroidManifest.xml"), renameMap));
+                File unsigned = new File(tmp, name + ".unsigned");
+                ZipRewriter.rewrite(src, unsigned, replacements, null);
+                Signer.sign(ctx, unsigned, new File(tmp, name));
+                unsigned.delete();
             }
-
-            File unsignedApk = new File(unsigned, name);
-            cb.progress("  repacking");
-            ZipRewriter.rewrite(src, unsignedApk, replacements, null);
-
-            File signedApk = new File(signed, name);
-            cb.progress("  signing");
-            Signer.sign(ctx, unsignedApk, signedApk);
-            signedApks.add(signedApk);
+        }
+        if (splitCount > 0) {
+            cb.stepDone(7);
+        } else {
+            cb.step(7, "no splits installed");
+            cb.stepDone(7);
         }
 
-        cb.progress("Opening installer…");
-        Installer.install(ctx, signedApks, installerCallback);
+        cb.step(8, null);
+        File out = patchedDir(ctx);
+        deleteRecursive(out);
+        if (!tmp.renameTo(out)) {
+            throw new IOException("cannot store patched bundle");
+        }
+        try (FileOutputStream fos = new FileOutputStream(
+                new File(out, "version.txt"))) {
+            fos.write(TARGET_VERSION.getBytes("UTF-8"));
+        }
+        cb.stepDone(8);
+        cb.done();
     }
 
     private static byte[] readEntry(File apk, String entryName) throws IOException {

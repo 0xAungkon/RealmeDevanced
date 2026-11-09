@@ -1,13 +1,17 @@
-# RealmeVanced Patcher (local build)
+# Realme Devanced Patcher (local build)
 
-An on-device, no-root patcher for **realme Link 5.8.811.2814**.
+App label: **Realme Devanced Patcher**. An on-device, no-root patcher for
+**realme Link 5.8.811.2814**.
 
 It reads the realme Link APKs already installed on the device, rebuilds them as
 the de-noised **`com.realme.devanced`** clone, re-signs the whole split set with
-the embedded personal key, and installs the result through a
-`PackageInstaller` session. The official `com.realme.link` stays installed.
+the embedded personal key, and **stores the signed bundle in the patcher's
+private storage**. It does not open the installer automatically: after patching,
+an **Install** button appears. The button is also shown on later launches while
+the stored bundle exists.
 
-After a successful install the patcher shows:
+The progress screen is a list of animated steps (pulsing dot while running, green
+check when done). After a successful install it shows:
 
 > Installed as com.realme.devanced.
 >
@@ -36,7 +40,8 @@ build time and ignored by git.
 6. Rebuilds the zips while keeping `resources.arsc` 4-byte aligned and native
    libraries `STORED`/4 KiB aligned.
 7. Signs base + splits with the embedded `rea-mod` key (v1/v2/v3).
-8. Installs the signed set as `com.realme.devanced`.
+8. Stores the signed set in `files/patched/` and reveals the **Install** button;
+   tapping it opens a `PackageInstaller` session for `com.realme.devanced`.
 
 ## Build
 

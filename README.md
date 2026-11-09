@@ -197,11 +197,14 @@ All scripts are dependency-free and accept file paths; run them with
 
 ## On-device patcher (local build)
 
-`patcher-app/` builds **`RealmeVancedPatcher_v5.8.811.2814.apk`**, a no-root
-patcher that reads the *installed* realme Link bundle, applies the patched
-`classes36/38/40.dex`, renames the package to `com.realme.devanced`, re-signs
-every APK and installs the result through `PackageInstaller`. The official app
-stays installed; when the install completes the patcher tells the user:
+`patcher-app/` builds **`RealmeDevancedPatcher_v5.8.811.2814.apk`** (app label
+“Realme Devanced Patcher”), a no-root patcher that reads the *installed* realme
+Link bundle, applies the patched `classes36/38/40.dex`, renames the package to
+`com.realme.devanced`, re-signs every APK and stores the bundle in the patcher’s
+private storage. Patching shows animated steps and ends with an **Install**
+button (it does not launch the installer automatically); the button remains on
+later launches while the stored bundle exists. The official app stays installed;
+when the install completes the patcher tells the user:
 
 > Now you can delete the original realme Link if you want.
 

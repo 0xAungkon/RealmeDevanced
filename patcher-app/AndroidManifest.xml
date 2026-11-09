@@ -15,7 +15,7 @@
     </queries>
 
     <application
-        android:label="RealmeVanced Patcher"
+        android:label="Realme Devanced Patcher"
         android:allowBackup="false"
         android:theme="@android:style/Theme.Material.Light">
         <activity
