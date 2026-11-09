@@ -10,19 +10,6 @@ stripped out — account walls, promos and upsell cards, permission/consent
 interruptions, legal clutter, guides, nags and dead space — while the part that
 actually matters, controlling the paired device, stays intact.
 
-This repository documents how the **realme Link 5.8.811.2814** split bundle is
-patched and provides the byte-level helpers to reproduce it. The output is a
-personal-use build installed as **`com.realme.mods`** (launcher label
-**“Realme Link DeVanced”**) that can coexist with the official `com.realme.link`.
-
-This repository does **not** ship the proprietary APK. It contains the patch
-recipe, the app-shell analysis, and the patcher scripts needed to reproduce the
-build locally.
-
-**The de-noising rule:** if it sells, nags, gates, interrupts, or merely
-decorates, it goes. If it pairs, controls, configures or updates a device, it
-stays.
-
 > **Disclaimer** — Not affiliated with or endorsed by realme. For personal use on
 > your own device only. Do not redistribute the re-signed proprietary app. The
 > original APK is the property of its copyright holder.
