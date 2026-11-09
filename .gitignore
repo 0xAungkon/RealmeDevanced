@@ -1,0 +1,17 @@
+# Decoded / rebuilt artifacts (large; reproducible from the APK)
+/work/base58/
+/work/apktool-out/
+/work/jadx-out/
+/work/build-null.apk
+/work/*.log
+
+# Nested clone of the REA tool source
+/rea-src/
+
+# Target APK (proprietary input; keep it locally, do not commit)
+/app/*.apk
+/app/*.aab
+
+# Python
+__pycache__/
+*.pyc

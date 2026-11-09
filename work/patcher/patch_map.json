@@ -1,0 +1,41 @@
+{
+  "old_package": "com.realme.link",
+  "new_package": "com.realme.mods",
+  "permission": "DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+  "authorities": [
+    "AcAccountBaseSdkInitProvider",
+    "account.ams.AcAccountSDKInitProvider",
+    "account.open.sdk.AcOpenDBContentProvider",
+    "androidx-startup",
+    "bg_process",
+    "EventContentProvider",
+    "FacebookInitProvider",
+    "fileprovider",
+    "firebaseinitprovider",
+    "hybrid.imageCrop",
+    "MicrosoftCognitiveServicesSpeech.InternalContentProvider",
+    "MyDeviceAppProvider",
+    "mydevice.shortcuts",
+    "MyProcessProvider",
+    "oplus.epona",
+    "provider",
+    "share_preference",
+    "telecomprovider",
+    "Track.BalanceEventProvider",
+    "Track.MultiProcessSharedPreferencesProvider",
+    "Track.TrackCommonProvider",
+    "Track.TrackEventProvider",
+    "TuyaMonitorProcessInitContentProvider",
+    "TuyaOptimusProvider",
+    "ty_share.provider",
+    "UCAccountSDKInitProvider",
+    "verify_sys_fileprovider",
+    "WebPro.fileProvider"
+  ],
+  "external": {
+    "com.oplus.statistics.provider":
+      "com.realme.mods.oplus.stats.s",
+    "com.facebook.app.FacebookContentProvider589687081742846":
+      "com.realme.modss.FacebookContentProvider589687081742846"
+  }
+}
