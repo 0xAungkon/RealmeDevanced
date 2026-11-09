@@ -29,65 +29,22 @@ stays.
 
 ---
 
-## What was removed (the noise)
+## Features
 
-**Account walls**
-- Login screen removed; the app lands directly on the home page.
-- Add-device, headset and device pages no longer bounce through login gates.
-- The clone runs account-free. Local BLE/device controls work; cloud sync, mall,
-  messages and health sync cannot authenticate (that is the trade-off).
+1. **No account login** — opens straight to Home; login gates are bypassed on add-device, headset and device flows. Local BLE/device control works; cloud sync, mall, messages and health sync don’t.
+2. **Clean Home** — no virtual-experience strip, Smart AI card, health trends, weather/location row, notification bell/dot, or banner-theme guide.
+3. **Accurate device card** — shows the real connection and battery state instead of “Not used” / “Device not connected”.
+4. **Minimal navigation** — Health and Workout tabs removed; Me replaced by a Settings button (black gear) that opens Settings directly.
+5. **Direct, full-screen device page** — one tap opens ANC / EQ / spatial-audio controls; no Quick guide, no task restart, no per-device Statement of Use.
+6. **No floating windows** — phone-mode overlays disabled globally; device page, Device details (3-dot) and other pages fill the screen.
+7. **Cleaner Add device** — no virtual-device banner, no Band/Watch manual section, no login gate.
+8. **No rating/feedback prompt.**
+9. **Minimal Settings** — removed notification status, App protection, third-party sync, Account management, Personal Info We Collect, Personal Info We Share with Third Parties.
+10. **Minimal About** — removed Privacy Notice, Service Agreement, Open source licenses, User Experience Program/notice and Withdraw consent; shows only icon + version.
+11. **Renamed and coexisting** — “Realme Link DeVanced” (`com.realme.mods`), installed alongside the official app.
+12. **Tighter layout** — header min-height and dead space removed; responsive 9 dp gap above the device list.
 
-**Home clutter**
-- Virtual experience strip, Smart AI card, health-trends card and weather/location
-  row removed.
-- Notification bell and red dot removed.
-- “Touch and hold to customize your banner theme” guide removed.
-- Header’s 188 dp minimum height cleared, with a responsive 9 dp gap above the
-  device list.
-- Home device card reflects the real connection state (no “Not used” /
-  “Device not connected”).
-
-**Bottom navigation**
-- Health and Workout tabs removed.
-- Me tab replaced by a **Settings** button (black gear icon) that opens
-  `SysSettingsActivity` directly.
-
-**Device pages**
-- Tapping a device or its card opens the device page directly — no Quick guide,
-  no task restart.
-- Earbud connection fixes: headset manager fallback, context injection, login-gate
-  bypass, real `isDeviceConnected()` query.
-- Per-device “Statement of Use” removed.
-- Phone-mode floating windows disabled globally, so the device page, Device
-  details (3-dot) and other pages are full-screen.
-
-**Add device / scanner**
-- “Virtual devices available” banner removed.
-- Manual Band/Watch device section removed.
-- Add-device no longer hits the login gate.
-
-**Settings / About**
-- Rating/feedback overlay removed.
-- Settings rows removed: connection-status notification, App protection,
-  third-party sync, Account management, Personal Information We Collect,
-  Personal Information We Share with Third Parties.
-- About rows removed: Privacy Notice, Service Agreement, Open source licenses,
-  User Experience Program (including its notice), Withdraw consent to Privacy
-  Notice.
-- App label renamed to **Realme Link DeVanced**.
-
-## What was kept (the substance)
-
-- Pairing, scanning and auto-detect.
-- The device page and its controls (ANC / Off / Transparency, EQ, spatial audio,
-  firmware and device details).
-- Home device card with live battery and connection state.
-- Region/location selection (required for BLE scanning and regional behaviour).
-- Manage permissions, version update, and a minimal About page (icon + version).
-- Direct access to Settings from the bottom bar.
-
-The intent is not to cripple the app: it is the same local device tool with the
-selling, nagging and gating layers peeled off.
+Everything that makes it a device tool still works: pairing/scanning, ANC, EQ, spatial audio, firmware/device details, battery status, region selection, permissions and updates.
 
 ## Screenshots
 
