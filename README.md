@@ -1,14 +1,11 @@
-# Realme Link DeVanced — de-noised modding workspace
+# Realme Link - DeVanced
 
 > A cleaner version of Realme Link — from a loyal user of Realme.
 >
 > Reverse engineering and analysis done with **[REA](https://github.com/morluto/rea)**
 > (Reverse Engineer Anything). Thanks to the REA project.
 
-**DeVanced** here means *de-noised*. The goal is realme Link with the noise
-stripped out — account walls, promos and upsell cards, permission/consent
-interruptions, legal clutter, guides, nags and dead space — while the part that
-actually matters, controlling the paired device, stays intact.
+**DeVanced** here means *de-noised*: the same realme Link, minus account walls, promos, consent nags and clutter. Device control stays.
 
 > **Disclaimer** — Not affiliated with or endorsed by realme. For personal use on
 > your own device only. Do not redistribute the re-signed proprietary app. The
