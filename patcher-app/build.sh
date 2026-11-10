@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build RealmeVancedPatcher_v5.8.811.2814.apk.
+# Build RealmeDevancedPatcher_v5.8.811.2814.apk.
 #
 # The patcher embeds the patched classes36/37/38/40.dex from a locally built
 # Realme Link clone.  Those files are proprietary derivatives and are NOT
@@ -14,6 +14,7 @@ AJ="$SDK/platforms/android-35/android.jar"
 KS="$HOME/.local/opt/rea-mod.keystore"
 PASSFILE="$HOME/.local/opt/rea-mod.pass"
 BASE_APK="${BASE_APK:-}"
+ICON_RES="${ICON_RES:-../work/base58/apktool-out/res}"
 VERSION="5.8.811.2814"
 OUT="build/RealmeDevancedPatcher_v${VERSION}.apk"
 
@@ -37,6 +38,18 @@ done
 cp "$KS" assets/rea-mod.p12
 cp "$PASSFILE" assets/ks.pass
 
+echo "== icon =="
+if [ -n "$BASE_APK" ] && [ -e "$BASE_APK" ]; then
+    python3 make_icon.py --apk "$BASE_APK" --out build/res
+elif [ -d build/res ]; then
+    : # reuse previously generated icon resources
+elif [ -d "$ICON_RES" ]; then
+    python3 make_icon.py --res "$ICON_RES" --out build/res
+else
+    echo "missing icon source: set ICON_RES=<decoded res dir> or BASE_APK=<apk>" >&2
+    exit 1
+fi
+
 echo "== compile =="
 rm -rf build/classes build/dex
 mkdir -p build/classes build/dex
@@ -50,9 +63,10 @@ echo "== dex =="
     build/classes.jar "$BT/lib/apksigner.jar"
 
 echo "== package =="
-rm -f build/app-unsigned.apk
+rm -f build/app-unsigned.apk build/res.zip
+"$BT/aapt2" compile --dir build/res -o build/res.zip
 "$BT/aapt2" link -o build/app-unsigned.apk -I "$AJ" \
-    --manifest AndroidManifest.xml
+    --manifest AndroidManifest.xml build/res.zip
 (cd build && zip -q -j app-unsigned.apk dex/classes.dex)
 zip -q -r build/app-unsigned.apk assets
 

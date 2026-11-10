@@ -53,10 +53,16 @@ build time and ignored by git.
 BASE_APK=/tmp/base-devanced.apk ./build.sh
 # or, once assets/ is populated, without re-extracting:
 ./build.sh
-# -> build/RealmeVancedPatcher_v5.8.811.2814.apk
+# -> build/RealmeDevancedPatcher_v5.8.811.2814.apk
 ```
 
-Requirements: Android SDK build-tools 35 + platform 35, JDK 21, and the local
+The launcher icon is generated at build time by `make_icon.py`: it extracts
+realme Link's adaptive-icon foreground from the local base APK (or a decoded
+`res/` tree) and composites it on a red background. Generated icons live under
+`build/res/` and are gitignored; no realme artwork is committed.
+
+Requirements: Android SDK build-tools 35 + platform 35, JDK 21, Pillow for the
+icon generator, and the local
 signing key at `~/.local/opt/rea-mod.keystore` (+ password file). No Gradle is
 used; `build.sh` runs javac → d8 → aapt2 → zipalign → apksigner.
 
