@@ -61,11 +61,12 @@ Dex ownership (original 40-dex base):
 | Dex | Contents touched |
 |---|---|
 | `classes36.dex` | `com.realme.iot.account.*` |
+| `classes37.dex` | `com.realme.iot.common.*` (base activities, phone mode, utils) |
 | `classes38.dex` | `com.realme.link.*` app/shell |
 | `classes40.dex` | `com.realme.iot.headset.*` |
 
 All patches below were applied to the apktool smali tree, rebuilt, and the
-resulting `classes36/38/40.dex` swapped into the **original** base APK (see §4).
+resulting `classes36/37/38/40.dex` swapped into the **original** base APK (see §4).
 Never rebuild the base resources with aapt2: it drops the extra resource
 packages (`0x80`–`0x84`).
 
@@ -586,7 +587,7 @@ dialog:
 
 This removes the per-device statement while keeping the normal connection
 flow. The **app-launch** Statement of Use (shown by `SplashActivity` before the
-region screen) is a separate consent and is not affected by this patch.
+region screen) is a separate consent; it is removed in §3.26.
 
 ### 3.16 Remove the home weather/location section
 
@@ -784,6 +785,11 @@ Disable it at the source:
 activity that used phone mode render as a normal full-screen page. Verified:
 `DeviceDetailActivity` window is `(fillxfill)`, fmt `TRANSPARENT`, no
 `DIM_BEHIND`, and the page fills the screen.
+
+**Patcher note:** this patch lives in `classes37.dex`, not in
+`classes36/38/40`. A patcher payload that only swaps 36/38/40 therefore keeps
+the floating window on Device Detail, EQ Mode, Dual Device Connection, Find my
+phone and Button Settings. Include `classes37.dex` in the payload.
 
 ### 3.22 Empty gap left where the location row was removed
 
@@ -993,6 +999,120 @@ the version text (`ConstraintLayout$LayoutParams.topToBottom = tv_version
 0x7f0a0d84`, `topToTop = -1`); both fields are public and can be changed at
 runtime without a resource rebuild.
 
+### 3.26 Skip the app-launch Statement of Use
+
+File: `smali_classes38/com/realme/link/home/SplashActivity.smali`
+
+On a fresh install `initViews()` reads `IS_FIRST_PERMISSION_KEY` as
+`mIsFirstStart`; `X9()` then calls `Z9()`, which builds `CTADialog.d()` — the
+full-screen “Statement of Use” consent shown before the region screen.
+
+`Z9()` can run the Agree path directly. Reproduce `Q9(dialog, true)` and the
+dialog’s `OnDismissListener` (`InitRegionActivity`) without creating the
+dialog:
+
+```smali
+.method public final Z9()V
+    .locals 3
+    const/4 v0, 0x1
+    invoke-static {v0}, Lcom/realme/iot/common/utils/SPUtils;->N(Z)V          # IS_AGREE_FULL_FUNCTION
+    const/4 v0, 0x0
+    invoke-static {v0}, Lcom/realme/iot/common/utils/SPUtils;->D(Z)V          # IS_FIRST_PERMISSION_KEY = false
+    const-string v0, "KEY_USER_READ_PRIVACY_POLICY_VERSION"
+    const-string v1, "20251215"
+    invoke-static {v0, v1}, Lcom/realme/iot/common/utils/SPUtils;->A(Ljava/lang/String;Ljava/lang/Object;)V
+    invoke-static {}, Lcom/realme/link/init/LinkApplicationInitHelper;->g()V
+    invoke-virtual {p0}, Lcom/realme/link/home/SplashActivity;->T9()V        # ACTION_USER_AGREE_CTA_DIALOG
+    const/4 v0, 0x1
+    const-string v1, "1"
+    invoke-virtual {p0, v0, v1}, Lcom/realme/link/home/SplashActivity;->S9(ZLjava/lang/String;)V
+    const-class v0, Lcom/realme/link/settings/userinfo/InitRegionActivity;
+    invoke-virtual {p0, v0}, Lcom/realme/iot/common/mvp/BaseAbstractActivity;->startActivityAndSelfFinish(Ljava/lang/Class;)V
+    return-void
+.end method
+```
+
+The first launch now goes straight to the region selector. The privacy-update
+dialog (`aa()` / `CTADialog.e`) is a different flow and is not touched.
+
+### 3.27 Remove the Location row from Settings
+
+File: `smali_classes38/com/realme/link/settings/syssettings/view/
+SysSettingsActivity.smali`
+
+The visible “Location” row is `item_region` (`@id/item_region`,
+`0x7f0a04ed`, label `@string/choice_site`), populated by `w9()`. Replace `w9()`
+with an unconditional hide. The row’s preceding child is the group divider
+(a plain `View` with no id), so hide the sibling as well — otherwise its 14 dp
+top/bottom margins leave a blank band:
+
+```smali
+.method public final w9()V
+    .locals 4
+    iget-object v0, p0, Lcom/realme/link/settings/syssettings/view/SysSettingsActivity;->mItemRegion:Lcom/realme/link/widgets/ItemLableValue;
+    if-nez v0, :cond_hide
+    return-void
+    :cond_hide
+    const/16 v1, 0x8
+    invoke-virtual {v0, v1}, Landroid/view/View;->setVisibility(I)V
+    invoke-virtual {v0}, Landroid/view/View;->getParent()Landroid/view/ViewParent;
+    move-result-object v2
+    check-cast v2, Landroid/view/ViewGroup;
+    if-eqz v2, :cond_done
+    invoke-virtual {v2, v0}, Landroid/view/ViewGroup;->indexOfChild(Landroid/view/View;)I
+    move-result v3
+    add-int/lit8 v3, v3, -0x1
+    if-ltz v3, :cond_done
+    invoke-virtual {v2, v3}, Landroid/view/ViewGroup;->getChildAt(I)Landroid/view/View;
+    move-result-object v3
+    if-eqz v3, :cond_done
+    invoke-virtual {v3, v1}, Landroid/view/View;->setVisibility(I)V
+    :cond_done
+    return-void
+.end method
+```
+
+Skipping the original `AdjustRegionManager.p(...)` callback is safe: it only
+attaches the click listener (`q9`) and clears the right chevron (`r9`) for a
+row that is now gone.
+
+### 3.28 Keep the nearby-devices permission prompt when connecting
+
+File: `smali_classes38/com/realme/link/devices/scan/SearchDeviceActivity.smali`
+
+`r()` (`onBleOpen`) requests the Bluetooth/nearby permission set
+(`PermissionConstant.j()`) through `PermissionHelper` only the first time:
+
+```smali
+invoke-static {v1, v0}, ...SPUtils;->g(String,Object)Object
+...
+booleanValue
+move-result v0
+if-nez v0, :cond_0        # flag false -> ask
+# flag true -> toast "Nearby devices permission is required"
+:cond_0
+... PermissionUtil.q(mPermissionHelper, PermissionConstant.j(), callback)
+```
+
+Once `FIRST_SEARCH_ACTIVITY_BLE_PERMISSION` has been consumed (or after a
+denied request), every later scan shows only a toast. If the launch consent
+screen is skipped (§3.26), a fresh install can end up with this flag consumed
+before the user ever sees the system prompt.
+
+Force the request branch so the rationale + system permission dialog always
+appears while the permission is missing:
+
+```smali
+invoke-virtual {v0}, Ljava/lang/Boolean;->booleanValue()Z
+move-result v0
+const/4 v0, 0x0          # ignore FIRST_SEARCH_ACTIVITY_BLE_PERMISSION
+if-nez v0, :cond_0
+```
+
+Verified: opening **Add device** shows the ““Nearby devices” permission
+required / Got it” dialog, then the system allow prompt, and the paired
+earbuds appear and connect.
+
 ---
 
 ## 4. Build pipeline used
@@ -1007,10 +1127,10 @@ runtime without a resource rebuild.
    apktool b apktool-out -o /tmp/base-mod.apk
    ```
    The resulting APK's **resources are NOT used** (aapt2 dropped the
-   `0x80`–`0x84` packages), only `classes36.dex`, `classes38.dex`,
-   `classes40.dex`.
+   `0x80`–`0x84` packages), only `classes36.dex`, `classes37.dex`,
+   `classes38.dex`, `classes40.dex`.
 4. Start from the **original base APK** (keeps resources.arsc with all
-   resource packages) and swap the three patched dex files:
+   resource packages) and swap the four patched dex files:
    `work/patcher/swap_dex.py`.
 5. Patch `resources.arsc` strings (label/count) — same-length bytes:
    `work/patcher/patch_arsc.py`.

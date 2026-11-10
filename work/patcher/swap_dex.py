@@ -8,13 +8,13 @@ replace only the dex files that contain the patched classes.
 Usage:
   python3 swap_dex.py <original.apk> <patched.apk> <output.apk> [dex ...]
 
-Default dex list: classes36.dex classes38.dex classes40.dex
+Default dex list: classes36.dex classes37.dex classes38.dex classes40.dex
 """
 
 import sys
 import zipfile
 
-DEFAULT = ["classes36.dex", "classes38.dex", "classes40.dex"]
+DEFAULT = ["classes36.dex", "classes37.dex", "classes38.dex", "classes40.dex"]
 
 
 def main():

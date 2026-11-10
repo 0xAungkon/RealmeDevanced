@@ -189,7 +189,7 @@ All scripts are dependency-free and accept file paths; run them with
 | `patch_axml_rename.py <in> <out> <old> <new>` | Package-prefix rename of **any** length: rebuilds the manifest string pool, its offsets and the XML header. Apply to base **and every split**. |
 | `patch_arsc.py <apk> <map.json> <out>` | Equal-length string replacement in `resources.arsc`. |
 | `patch_arsc_rename.py <in> <out> <old> <new>` | Rename a resource string of **different** length by resizing the global string pool and fixing all following offsets. |
-| `swap_dex.py <original> <patched> <out> [dex…]` | Replace `classes*.dex` entries in the original APK (default: 36, 38, 40). |
+| `swap_dex.py <original> <patched> <out> [dex…]` | Replace `classes*.dex` entries in the original APK (default: 36, 37, 38, 40). |
 | `patch_setting_img.py <in> <out>` | Make `res/drawable/setting_img.xml` a transparent circle with a black gear. |
 | `build_clone_split.py` | Original end-to-end harness (dex swap + manifest patch + align + sign). |
 
@@ -199,7 +199,7 @@ All scripts are dependency-free and accept file paths; run them with
 
 `patcher-app/` builds **`RealmeDevancedPatcher_v5.8.811.2814.apk`** (app label
 “Realme Devanced Patcher”), a no-root patcher that reads the *installed* realme
-Link bundle, applies the patched `classes36/38/40.dex`, renames the package to
+Link bundle, applies the patched `classes36/37/38/40.dex`, renames the package to
 `com.realme.devanced`, re-signs every APK and stores the bundle in the patcher’s
 private storage. Patching shows animated steps and ends with an **Install**
 button (it does not launch the installer automatically); the button remains on

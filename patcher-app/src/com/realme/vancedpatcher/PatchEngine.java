@@ -23,6 +23,13 @@ final class PatchEngine {
     static final String TARGET_PACKAGE = "com.realme.link";
     static final String TARGET_VERSION = "5.8.811.2814";
 
+    /**
+     * Bump whenever the embedded dex payload changes. Old bundles stored by a
+     * previous patcher build no longer count as ready, so the user is forced to
+     * re-patch instead of installing stale code.
+     */
+    static final String PAYLOAD_VERSION = "6";
+
     static final String[] STEP_LABELS = {
             "Reading installed realme Link",
             "Renaming package and authorities",
@@ -60,10 +67,14 @@ final class PatchEngine {
         }
         try {
             byte[] raw = readAll(new java.io.FileInputStream(marker));
-            return TARGET_VERSION.equals(new String(raw, "UTF-8").trim());
+            return stamp().equals(new String(raw, "UTF-8").trim());
         } catch (IOException e) {
             return false;
         }
+    }
+
+    private static String stamp() {
+        return TARGET_VERSION + "|" + PAYLOAD_VERSION;
     }
 
     static List<File> patchedFiles(Context ctx) {
@@ -155,6 +166,7 @@ final class PatchEngine {
 
                 cb.step(4, null);
                 replacements.put("classes36.dex", readAsset(ctx, "classes36.dex"));
+                replacements.put("classes37.dex", readAsset(ctx, "classes37.dex"));
                 replacements.put("classes38.dex", readAsset(ctx, "classes38.dex"));
                 replacements.put("classes40.dex", readAsset(ctx, "classes40.dex"));
                 cb.stepDone(4);
@@ -194,7 +206,7 @@ final class PatchEngine {
         }
         try (FileOutputStream fos = new FileOutputStream(
                 new File(out, "version.txt"))) {
-            fos.write(TARGET_VERSION.getBytes("UTF-8"));
+            fos.write(stamp().getBytes("UTF-8"));
         }
         cb.stepDone(8);
         cb.done();

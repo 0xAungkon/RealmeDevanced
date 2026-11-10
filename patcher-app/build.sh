@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build RealmeVancedPatcher_v5.8.811.2814.apk.
 #
-# The patcher embeds the patched classes36/38/40.dex from a locally built
+# The patcher embeds the patched classes36/37/38/40.dex from a locally built
 # Realme Link clone.  Those files are proprietary derivatives and are NOT
 # committed: this APK is for personal use and must not be redistributed.
 set -euo pipefail
@@ -13,18 +13,26 @@ BT="$SDK/build-tools/35.0.0"
 AJ="$SDK/platforms/android-35/android.jar"
 KS="$HOME/.local/opt/rea-mod.keystore"
 PASSFILE="$HOME/.local/opt/rea-mod.pass"
-BASE_APK="${BASE_APK:-/tmp/base-devanced.apk}"
+BASE_APK="${BASE_APK:-}"
 VERSION="5.8.811.2814"
 OUT="build/RealmeDevancedPatcher_v${VERSION}.apk"
 
-for f in "$BT/d8" "$BT/aapt2" "$BT/zipalign" "$BT/apksigner" "$AJ" "$KS" "$PASSFILE" "$BASE_APK"; do
+for f in "$BT/d8" "$BT/aapt2" "$BT/zipalign" "$BT/apksigner" "$AJ" "$KS" "$PASSFILE"; do
     [ -e "$f" ] || { echo "missing: $f" >&2; exit 1; }
 done
 
 echo "== assets =="
 mkdir -p assets build/classes build/dex
-for dex in classes36.dex classes38.dex classes40.dex; do
-    unzip -p "$BASE_APK" "$dex" > "assets/$dex"
+# Refresh the dex payload from BASE_APK when one is given; otherwise reuse the
+# copies already in assets/ (kept out of git).
+if [ -n "${BASE_APK:-}" ]; then
+    [ -e "$BASE_APK" ] || { echo "missing: $BASE_APK" >&2; exit 1; }
+    for dex in classes36.dex classes37.dex classes38.dex classes40.dex; do
+        unzip -p "$BASE_APK" "$dex" > "assets/$dex"
+    done
+fi
+for dex in classes36.dex classes37.dex classes38.dex classes40.dex; do
+    [ -s "assets/$dex" ] || { echo "missing payload: assets/$dex" >&2; exit 1; }
 done
 cp "$KS" assets/rea-mod.p12
 cp "$PASSFILE" assets/ks.pass

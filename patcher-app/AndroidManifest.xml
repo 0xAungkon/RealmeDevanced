@@ -17,7 +17,7 @@
     <application
         android:label="Realme Devanced Patcher"
         android:allowBackup="false"
-        android:theme="@android:style/Theme.Material.Light">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
             android:exported="true"

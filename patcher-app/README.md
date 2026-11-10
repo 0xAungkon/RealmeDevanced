@@ -19,7 +19,7 @@ check when done). After a successful install it shows:
 
 ## ⚠ Personal use only
 
-The built APK embeds the patched `classes36/38/40.dex` from a locally built
+The built APK embeds the patched `classes36/37/38/40.dex` from a locally built
 clone. Those are derivative works of realme's proprietary software, so the
 resulting APK must **not** be published, shared or attached to a release. The
 repository tracks only the patcher source; the payload is generated locally at
@@ -30,8 +30,11 @@ build time and ignored by git.
 1. Reads `com.realme.link` (`sourceDir` + `splitSourceDirs`) and verifies
    version `5.8.811.2814`.
 2. Copies the installed split bundle into app-private cache.
-3. Replaces `classes36.dex`, `classes38.dex`, `classes40.dex` with the patched
-   variants bundled in `assets/`.
+3. Replaces `classes36.dex`, `classes37.dex`, `classes38.dex`,
+   `classes40.dex` with the patched variants bundled in `assets/`.
+   `classes37` carries the `PhoneModeKt.d()` no-op, which is what makes
+   Device Detail, EQ Mode, Dual Device Connection, Find my phone and Button
+   Settings render full-screen instead of as floating `810x1800` cards.
 4. Renames the base and every split manifest from `com.realme.link` to
    `com.realme.devanced` (resized AXML string pool; authorities and the
    dynamic-receiver permission included).
@@ -46,8 +49,10 @@ build time and ignored by git.
 ## Build
 
 ```bash
-# payload: classes36/38/40.dex from a locally built devanced base
+# payload: classes36/37/38/40.dex from a locally built devanced base
 BASE_APK=/tmp/base-devanced.apk ./build.sh
+# or, once assets/ is populated, without re-extracting:
+./build.sh
 # -> build/RealmeVancedPatcher_v5.8.811.2814.apk
 ```
 

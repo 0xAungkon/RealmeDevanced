@@ -155,11 +155,15 @@ factories/delegates are in classes38.
 ## On-device patcher (`patcher-app/`)
 
 A no-root Java app (built without Gradle) that reads the installed realme Link
-bundle, swaps in the patched `classes36/38/40.dex`, renames the package to
+bundle, swaps in the patched `classes36/37/38/40.dex`, renames the package to
 `com.realme.devanced`, re-signs base + splits and installs via
 `PackageInstaller`. Build with `BASE_APK=/tmp/base-devanced.apk
 ./patcher-app/build.sh` → `patcher-app/build/RealmeVancedPatcher_<version>.apk`.
 
+- `classes37.dex` must be part of the payload: it contains the
+  `PhoneModeKt.d()` early return (§3.21) that turns every phone-mode activity
+  full-screen. Without it Device Detail, EQ Mode, Dual Connection, Find my
+  phone and Button Settings keep the floating `810x1800` window.
 - `AxmlRename` / `ArscRename` resize string pools; `ZipRewriter` must keep
   `resources.arsc` 4-byte aligned and `.so` entries STORED/4 KiB aligned or
   PackageManager rejects the APK (`Failed parse during installPackageLI`).
